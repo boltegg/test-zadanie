@@ -13,13 +13,9 @@ func RunHttpServer(addr string) error {
 	v1.GET("/images", GetImagesHandler)
 	v1.POST("/images/upload", UploadImageHandler)
 
-	v1.GET("/images/:id/resized", NotImplemented)
+	v1.GET("/images/:id/resized", GetResizedImagesHandler)
 
 	return r.Run(addr)
-}
-
-func NotImplemented(c *gin.Context) {
-	c.String(501, "not implemented")
 }
 
 func UploadImageHandler(c *gin.Context) {
@@ -78,20 +74,42 @@ func GetImagesHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err})
 	}
 
-	var res = []gin.H{}
+	var result = []gin.H{}
 
 	for _, image := range images {
-		res = append(res, gin.H{
+		result = append(result, gin.H{
 			"id": image.Id,
-			"name": image.FileName + "." + image.Format,
+			"name": image.FileName,
 			"url": image.Url(),
 		})
 	}
 
-	c.JSON(200, gin.H{"images": res})
+	c.JSON(200, gin.H{"images": result})
 }
 
 func GetResizedImagesHandler(c *gin.Context) {
-	//c.Query("id")
-	// TODO: return slice of image links
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(400, gin.H{"error": "incorrect id"})
+		return
+	}
+
+	images, err := GetResizedImages(id)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err})
+	}
+
+	var result = []gin.H{}
+
+	for _, image := range images {
+		result = append(result, gin.H{
+			"id": image.Id,
+			"name": image.FileName,
+			"width": image.Width,
+			"height": image.Height,
+			"url": image.Url(),
+		})
+	}
+
+	c.JSON(200, gin.H{"images": result})
 }
