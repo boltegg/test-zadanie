@@ -1,24 +1,28 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/disintegration/imaging"
 	"github.com/sirupsen/logrus"
+	"image"
 	"io"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type ImageOriginal struct {
+type ImageOptions struct {
 	Id       int64
 	UserId   int64
 	FileName string
 	Format   string
 }
 
-type ImageResized struct {
+type ImageResizedOptions struct {
 	Id         int64
 	UserId     int64
 	OriginalId int64
@@ -28,55 +32,65 @@ type ImageResized struct {
 	Height     int
 }
 
-func (i *ImageOriginal) Path() string {
+func (i *ImageOptions) Path() string {
 	return fmt.Sprintf("%d/%s_%d.%s", i.UserId, i.FileName, i.Id, i.Format)
 }
 
-func (i *ImageOriginal) Url() string {
+func (i *ImageOptions) Url() string {
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", AS3_BUCKET_NAME, AS3_REGION, i.Path())
 }
 
-func (i *ImageResized) Path() string {
-	return fmt.Sprintf("%d/%s_%d_%dx%d.%s", i.UserId, i.FileName, i.Id, i.Width, i.Height, i.Format)
+func (i *ImageResizedOptions) Path() string {
+	return fmt.Sprintf("%d/%s_%d_%dx%d.%s", i.UserId, i.FileName, i.OriginalId, i.Width, i.Height, i.Format)
 }
 
-func (i *ImageResized) Url() string {
+func (i *ImageResizedOptions) Url() string {
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", AS3_BUCKET_NAME, AS3_REGION, i.Path())
 }
 
 //
 
-func SaveImage(imageRaw io.Reader, fileFullName string) (loc string, err error) {
-
-	fname, format, err := splitFileName(fileFullName)
+func NewImageOptions(fileNameFull string) (img ImageOptions, err error) {
+	fname, format, err := parseFileName(fileNameFull)
 	if err != nil {
 		return
 	}
 
-	img := ImageOriginal{
+	_, err = imaging.FormatFromExtension(format)
+	if err != nil {
+		err = fmt.Errorf("unsupported image format")
+		return
+	}
+
+	img = ImageOptions{
 		UserId:   1,
 		FileName: fname,
 		Format:   format,
 	}
 
-	err = img.Insert()
+	return
+}
+
+func (i *ImageOptions) Save(imageRaw io.Reader) (location string, err error) {
+
+	err = i.insert()
 	if err != nil {
 		logrus.Error("DB Insert error:", err)
-		err = fmt.Errorf("Upload error")
+		err = fmt.Errorf("insert error")
 		return
 	}
 
-	_, err = uploadFileS3(imageRaw, img.Path())
+	location, err = uploadFileS3(imageRaw, i.Path())
 	if err != nil {
 		logrus.Error("S3 upload file error:", err)
-		err = fmt.Errorf("Upload error")
+		err = fmt.Errorf("upload error")
 		return
 	}
 
 	return
 }
 
-func (i *ImageOriginal) Insert() (err error) {
+func (i *ImageOptions) insert() (err error) {
 
 	res, err := mysqlSess.Exec("INSERT INTO image_original (user_id, file_name, format) VALUES(?, ?, ?)", i.UserId, i.FileName, i.Format)
 	if err != nil {
@@ -87,10 +101,64 @@ func (i *ImageOriginal) Insert() (err error) {
 	return
 }
 
+func (i *ImageOptions) Resize(imageRaw io.Reader, width int, height int) (imgResized ImageResizedOptions, dstRaw io.Reader, err error) {
+	srcImage, _, err := image.Decode(imageRaw)
+	if err != nil {
+		return
+	}
+
+	dstImage := imaging.Resize(srcImage, width, height, imaging.Lanczos)
+	format, _ := imaging.FormatFromExtension(i.Format)
+
+	var buf bytes.Buffer
+	bufWriter := bufio.NewWriter(&buf)
+	err = imaging.Encode(bufWriter, dstImage, format)
+	if err != nil {
+		return
+	}
+	dstRaw = bytes.NewReader(buf.Bytes())
+
+	imgResized = ImageResizedOptions{
+		UserId:i.UserId,
+		OriginalId:i.Id,
+		FileName:i.FileName,
+		Format:i.Format,
+		Width:width,
+		Height:height,
+	}
+
+	return
+}
+
 //
 
-func ResizeImage() {
+func (i *ImageResizedOptions) Save(imageRaw io.Reader) (location string, err error) {
+	err = i.insert()
+	if err != nil {
+		logrus.Error("DB Insert error:", err)
+		err = fmt.Errorf("insert error")
+		return
+	}
 
+	location, err = uploadFileS3(imageRaw, i.Path())
+	if err != nil {
+		logrus.Error("S3 upload file error:", err)
+		err = fmt.Errorf("upload error")
+		return
+	}
+
+	return
+}
+
+func (i *ImageResizedOptions) insert() (err error) {
+
+	res, err := mysqlSess.Exec("INSERT INTO image_resized (original_id, width, height) VALUES(?, ?, ?)", i.OriginalId, i.Width, i.Height)
+	if err != nil {
+		return
+	}
+
+	i.Id, err = res.LastInsertId()
+	return
 }
 
 //
@@ -111,10 +179,10 @@ func uploadFileS3(file io.Reader, key string) (location string, err error) {
 	return result.Location, err
 }
 
-func splitFileName(fileName string) (name, format string, err error) {
+func parseFileName(fileName string) (name, format string, err error) {
 	slise := strings.Split(fileName, ".")
 	if len(slise) < 2 {
-		err = fmt.Errorf("File format unknown")
+		err = fmt.Errorf("format unknown")
 	}
 	name = strings.Join(slise[:len(slise)-1], ".")
 	format = slise[len(slise)-1]
