@@ -16,20 +16,20 @@ import (
 )
 
 type ImageOptions struct {
-	Id       int64
-	UserId   int64
-	FileName string
-	Format   string
+	Id       int64  `db:"id"`
+	UserId   int64  `db:"user_id"`
+	FileName string `db:"file_name"`
+	Format   string `db:"format"`
 }
 
 type ImageResizedOptions struct {
-	Id         int64
-	UserId     int64
-	OriginalId int64
-	FileName   string
-	Format     string
-	Width      int
-	Height     int
+	Id         int64  `db:"id"`
+	UserId     int64  `db:"user_id"`
+	OriginalId int64  `db:"original_id"`
+	FileName   string `db:"file_name"`
+	Format     string `db:"format"`
+	Width      int    `db:"width"`
+	Height     int    `db:"height"`
 }
 
 func (i *ImageOptions) Path() string {
@@ -119,12 +119,12 @@ func (i *ImageOptions) Resize(imageRaw io.Reader, width int, height int) (imgRes
 	dstRaw = bytes.NewReader(buf.Bytes())
 
 	imgResized = ImageResizedOptions{
-		UserId:i.UserId,
-		OriginalId:i.Id,
-		FileName:i.FileName,
-		Format:i.Format,
-		Width:width,
-		Height:height,
+		UserId:     i.UserId,
+		OriginalId: i.Id,
+		FileName:   i.FileName,
+		Format:     i.Format,
+		Width:      width,
+		Height:     height,
 	}
 
 	return
@@ -158,6 +158,18 @@ func (i *ImageResizedOptions) insert() (err error) {
 	}
 
 	i.Id, err = res.LastInsertId()
+	return
+}
+
+//
+
+func GetAllImages() (images []ImageOptions, err error) {
+
+	err = mysqlSess.Select(&images, "SELECT * FROM image_original")
+	if err != nil {
+		logrus.Error("Error get all images, ", err)
+		return nil, fmt.Errorf("error get list of images")
+	}
 	return
 }
 

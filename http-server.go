@@ -10,7 +10,7 @@ func RunHttpServer(addr string) error {
 
 	v1 := r.Group("/api/v1")
 
-	v1.GET("/images", NotImplemented)
+	v1.GET("/images", GetImagesHandler)
 	v1.POST("/images/upload", UploadImageHandler)
 
 	v1.GET("/images/:id/resized", NotImplemented)
@@ -19,7 +19,7 @@ func RunHttpServer(addr string) error {
 }
 
 func NotImplemented(c *gin.Context) {
-	c.String(200, "not implemented")
+	c.String(501, "not implemented")
 }
 
 func UploadImageHandler(c *gin.Context) {
@@ -73,7 +73,22 @@ func UploadImageHandler(c *gin.Context) {
 }
 
 func GetImagesHandler(c *gin.Context) {
-	// TODO: return slice of image links
+	images, err := GetAllImages()
+	if err != nil {
+		c.JSON(500, gin.H{"error": err})
+	}
+
+	var res = []gin.H{}
+
+	for _, image := range images {
+		res = append(res, gin.H{
+			"id": image.Id,
+			"name": image.FileName + "." + image.Format,
+			"url": image.Url(),
+		})
+	}
+
+	c.JSON(200, gin.H{"images": res})
 }
 
 func GetResizedImagesHandler(c *gin.Context) {
