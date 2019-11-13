@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func RunHttpServer(addr string) error {
+func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
 	v1 := r.Group("/api/v1")
@@ -17,7 +17,7 @@ func RunHttpServer(addr string) error {
 	v1.GET("/images/:id/resized", GetResizedImagesHandler)
 	v1.POST("/images/:id/resized", ResizeImageHandler)
 
-	return r.Run(addr)
+	return r
 }
 
 func UploadImageHandler(c *gin.Context) {

@@ -20,7 +20,8 @@ func main() {
 	}
 
 	// run http server
-	err = RunHttpServer(fmt.Sprintf("%s:%s", config.HttpHost, config.HttpPort))
+	router := SetupRouter()
+	err = router.Run(fmt.Sprintf("%s:%s", config.HttpHost, config.HttpPort))
 	if err != nil {
 		panic(err)
 	}
