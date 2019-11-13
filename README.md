@@ -2,7 +2,7 @@
 
 ## Methods
 
-#### GET /images
+#### GET /api/v1/images
 Returns all original images
 
 **Example Response**
@@ -18,7 +18,7 @@ Returns all original images
 }
 ``````
 
-#### POST /images
+#### POST /api/v1/images
 Upload and resize new image.  Returns links to the original image and resized  
 
 Content-Type: multipart/form-data  
@@ -40,7 +40,7 @@ Content-Type: multipart/form-data
 }
 ``````
 
-#### GET /images/:id/resized
+#### GET /api/v1/images/:id/resized
 Returns all resized images for the requested id
 
 **Example Response**
@@ -58,7 +58,7 @@ Returns all resized images for the requested id
 }
 ``````
 
-#### POST /images/:id/resized
+#### POST /api/v1/images/:id/resized
 Resize image of the requested id. Returns links to the original image and resized  
 
 **Parametrs:**  
