@@ -14,22 +14,34 @@ var (
 
 func main() {
 
-	err := InitConfig("config.yaml")
+	err := initApp()
 	if err != nil {
 		panic(err)
 	}
-
-	// init aws session
-	s3sess = session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(config.S3region)},
-	))
-
-	// init mysql session
-	mysqlSess = sqlx.MustConnect("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.DbUser, config.DbPassword, config.DbHost, config.DbPort,config.DbDatabase))
 
 	// run http server
 	err = RunHttpServer(fmt.Sprintf("%s:%s", config.HttpHost, config.HttpPort))
 	if err != nil {
 		panic(err)
 	}
+}
+
+func initApp() error {
+	err := InitConfig("config.yaml")
+	if err != nil {
+		return err
+	}
+
+	// init aws session
+	s3sess, err = session.NewSession(&aws.Config{
+		Region: aws.String(config.S3region)},
+	)
+	if err != nil {
+		return err
+	}
+
+	// init mysql session
+	mysqlSess, err = sqlx.Connect("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.DbUser, config.DbPassword, config.DbHost, config.DbPort,config.DbDatabase))
+
+	return err
 }
