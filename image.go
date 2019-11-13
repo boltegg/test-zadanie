@@ -37,7 +37,7 @@ func (i *ImageOptions) Path() string {
 }
 
 func (i *ImageOptions) Url() string {
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", AS3_BUCKET_NAME, AS3_REGION, i.Path())
+	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", config.S3bucketName, config.S3region, i.Path())
 }
 
 func (i *ImageResizedOptions) Path() string {
@@ -45,7 +45,7 @@ func (i *ImageResizedOptions) Path() string {
 }
 
 func (i *ImageResizedOptions) Url() string {
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", AS3_BUCKET_NAME, AS3_REGION, i.Path())
+	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", config.S3bucketName, config.S3region, i.Path())
 }
 
 //
@@ -133,7 +133,7 @@ func (i *ImageOptions) Raw() (raw io.Reader, err error) {
 	buf := aws.NewWriteAtBuffer([]byte{})
 	_, err = downloader.Download(buf,
 		&s3.GetObjectInput{
-			Bucket: aws.String(AS3_BUCKET_NAME),
+			Bucket: aws.String(config.S3bucketName),
 			Key:    aws.String(i.Path()),
 		})
 	if err != nil {
@@ -201,7 +201,7 @@ func uploadFileS3(file io.Reader, key string) (location string, err error) {
 	uploader := s3manager.NewUploader(s3sess)
 
 	result, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(AS3_BUCKET_NAME),
+		Bucket: aws.String(config.S3bucketName),
 		Key:    aws.String(key),
 		Body:   file,
 		ACL:    aws.String("public-read"),

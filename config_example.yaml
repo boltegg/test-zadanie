@@ -1,0 +1,11 @@
+http_host:
+http_port: 80
+
+db_host: localhost
+db_port: 3306
+db_user: root
+db_password:
+db_database: test_zadanie
+
+s3_region: eu-central-1
+s3_bucket_name: test-zadanie
