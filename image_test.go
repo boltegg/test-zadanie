@@ -10,9 +10,7 @@ import (
 
 func TestNewImageOptions(t *testing.T) {
 	img, err := NewImageOptions("test_image.jpg")
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 
 	expected := ImageOptions{
 		UserId:1, //temp
@@ -31,14 +29,10 @@ func TestNewImageOptions(t *testing.T) {
 func TestImageOptions_Save(t *testing.T) {
 
 	err := initApp()
-	if err != nil {
-		t.Error("error init config", err)
-	}
+	assert.Nil(t, err)
 
 	imgRaw, err := os.OpenFile("testdata/test_image.jpg", os.O_RDONLY, 0644)
-	if err != nil {
-		t.Error("error open file", err)
-	}
+	assert.Nil(t, err)
 
 	imgOpts := ImageOptions{
 		UserId:1, //temp
@@ -47,16 +41,12 @@ func TestImageOptions_Save(t *testing.T) {
 	}
 
 	_, err = imgOpts.Save(imgRaw)
-	if err != nil {
-		t.Error("error upload file", err)
-	}
+	assert.Nil(t, err)
 }
 
 func TestImageOptions_Resize(t *testing.T) {
 	imgRaw, err := os.OpenFile("testdata/test_image.jpg", os.O_RDONLY, 0644)
-	if err != nil {
-		t.Error("error open file", err)
-	}
+	assert.Nil(t, err)
 
 	imgOpts := ImageOptions{
 		Id:10,
@@ -66,9 +56,7 @@ func TestImageOptions_Resize(t *testing.T) {
 	}
 
 	imgResOpts, imgRes, err := imgOpts.Resize(imgRaw, 50, 40)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 
 	expectedRes := ImageResizedOptions{
 		UserId: 1,  //temp
@@ -84,18 +72,12 @@ func TestImageOptions_Resize(t *testing.T) {
 	///
 
 	b1, err := ioutil.ReadAll(imgRes)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 
 	f2, err := os.OpenFile("testdata/test_resized.jpg", os.O_RDONLY, 0644)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 	b2, err := ioutil.ReadAll(f2)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 
 	assert.Equal(t, b1, b2)
 
@@ -104,14 +86,10 @@ func TestImageOptions_Resize(t *testing.T) {
 func TestImageOptions_Raw(t *testing.T) {
 
 	err := initApp()
-	if err != nil {
-		t.Error("error init config", err)
-	}
+	assert.Nil(t, err)
 
 	imgRaw, err := os.OpenFile("testdata/test_image.jpg", os.O_RDONLY, 0644)
-	if err != nil {
-		t.Error("error open file", err)
-	}
+	assert.Nil(t, err)
 
 	imgOpts := ImageOptions{
 		Id:1,
@@ -121,23 +99,15 @@ func TestImageOptions_Raw(t *testing.T) {
 	}
 
 	_, err = imgOpts.Save(imgRaw)
-	if err != nil {
-		t.Error("error open file", err)
-	}
+	assert.Nil(t, err)
 
 	imgRaw2, err := imgOpts.Raw()
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 
 	b1, err := ioutil.ReadAll(imgRaw)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 	b2, err := ioutil.ReadAll(imgRaw2)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.Nil(t, err)
 
 	assert.Equal(t, b1, b2)
 
