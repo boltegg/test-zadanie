@@ -1,6 +1,6 @@
-#Api Documentation
+# Api Documentation
 
-##Methods
+## Methods
 
 #### GET /images
 Returns all original images
@@ -21,12 +21,16 @@ Returns all original images
 #### POST /images
 Upload and resize new image.  Returns links to the original image and resized  
 
-**Parametrs:**  
-file - required, file image   
-width - required, width for resized image   
-height - required, height for resized image   
-
 Content-Type: multipart/form-data  
+
+**Parametrs:**  
+
+| Parametr | Is Required | Desctiption                  |
+| -------- | ----------- | ---------------------------- |
+| file     | Yes         | image file                   |
+| width    | Yes         | width for resizing image      |
+| height   | Yes         | height for resizing image     |
+
 
 **Example Response**
 ``````
@@ -58,8 +62,12 @@ Returns all resized images for the requested id
 Resize image of the requested id. Returns links to the original image and resized  
 
 **Parametrs:**  
-width - required, width for resized image   
-height - required, height for resized image   
+
+| Parametr | Is Required | Desctiption                  |
+| -------- | ----------- | ---------------------------- |
+| width    | Yes         | width for resizing image      |
+| height   | Yes         | height for resizing image     |
+
 
 **Example Response**
 ``````
@@ -69,9 +77,8 @@ height - required, height for resized image
 }
 ``````
 
-##Errors
+## Errors
 
-Errors:  
 | Code | Desctiption                  |
 | ---- | ---------------------------- |
 | 400  | Incorect upload file or data |
