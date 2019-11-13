@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/disintegration/imaging"
-	"github.com/sirupsen/logrus"
 	"image"
 	"io"
 	"strings"
@@ -75,15 +75,11 @@ func (i *ImageOptions) Save(imageRaw io.Reader) (location string, err error) {
 
 	err = i.insert()
 	if err != nil {
-		logrus.Error("DB Insert error:", err)
-		err = fmt.Errorf("insert error")
 		return
 	}
 
 	location, err = uploadFileS3(imageRaw, i.Path())
 	if err != nil {
-		logrus.Error("S3 upload file error:", err)
-		err = fmt.Errorf("upload error")
 		return
 	}
 
@@ -130,20 +126,35 @@ func (i *ImageOptions) Resize(imageRaw io.Reader, width int, height int) (imgRes
 	return
 }
 
+func (i *ImageOptions) Raw() (raw io.Reader, err error) {
+
+	downloader := s3manager.NewDownloader(s3sess)
+
+	buf := aws.NewWriteAtBuffer([]byte{})
+	_, err = downloader.Download(buf,
+		&s3.GetObjectInput{
+			Bucket: aws.String(AS3_BUCKET_NAME),
+			Key:    aws.String(i.Path()),
+		})
+	if err != nil {
+		return
+	}
+
+	raw = bytes.NewReader(buf.Bytes())
+	return
+}
+
 //
 
 func (i *ImageResizedOptions) Save(imageRaw io.Reader) (location string, err error) {
+
 	err = i.insert()
 	if err != nil {
-		logrus.Error("DB Insert error:", err)
-		err = fmt.Errorf("insert error")
 		return
 	}
 
 	location, err = uploadFileS3(imageRaw, i.Path())
 	if err != nil {
-		logrus.Error("S3 upload file error:", err)
-		err = fmt.Errorf("upload error")
 		return
 	}
 
@@ -163,13 +174,15 @@ func (i *ImageResizedOptions) insert() (err error) {
 
 //
 
+func GetImage(id int) (image ImageOptions, err error) {
+
+	err = mysqlSess.Get(&image, "SELECT * FROM image_original WHERE id=?", id)
+	return
+}
+
 func GetAllImages() (images []ImageOptions, err error) {
 
 	err = mysqlSess.Select(&images, "SELECT * FROM image_original")
-	if err != nil {
-		logrus.Error("Error get all images, ", err)
-		return nil, fmt.Errorf("error get list of images")
-	}
 	return
 }
 
@@ -178,10 +191,6 @@ func GetResizedImages(id int) (images []ImageResizedOptions, err error) {
 	err = mysqlSess.Select(&images, `SELECT image_resized.id, user_id, original_id, width, height, file_name,format FROM image_resized
 LEFT JOIN image_original ON image_resized.original_id = image_original.id
 WHERE image_resized.original_id=?`, id)
-	if err != nil {
-		logrus.Error("Error get resized images, ", err)
-		return nil, fmt.Errorf("error get list of resized images")
-	}
 	return
 }
 
